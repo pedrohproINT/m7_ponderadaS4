@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <title>Simple One-Page App</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+  <div class="wrap">
+    <h1>Cadastro & Listagem (Customers + Orders)</h1>
+
+    <form id="mainForm">
+      <div class="row">
+        <label for="name">Nome</label>
+        <input type="text" id="name" required />
+      </div>
+      <div class="row">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" required />
+      </div>
+      <div class="row">
+        <label for="amount">Valor</label>
+        <input type="number" step="0.01" id="amount" required />
+      </div>
+      <div class="row">
+        <label for="status">Status</label>
+        <select id="status">
+          <option value="pending">pending</option>
+          <option value="paid">paid</option>
+          <option value="canceled">canceled</option>
+        </select>
+      </div>
+
+      <button type="submit">Criar</button>
+      <button type="button" id="btnConsultar" style="margin-left:10px;">Consultar</button>
+      <span id="msg" style="margin-left:10px;"></span>
+    </form>
+
+    <h2 style="margin-top:24px;">Registros (últimos 100)</h2>
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th>Order ID</th><th>Nome</th><th>E-mail</th><th>Valor</th><th>Status</th><th>Criado em</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+<script>
+async function fetchRows(){
+  const res = await fetch('/api/records');
+  if(!res.ok){
+    const t = await res.text();
+    throw new Error('Falha no GET: ' + t);
+  }
+  const data = await res.json();
+  const tbody = document.querySelector('#tbl tbody');
+  tbody.innerHTML = '';
+  for (const r of data) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.order_id}</td>
+      <td>${r.name}</td>
+      <td>${r.email}</td>
+      <td>${r.amount}</td>
+      <td>${r.status}</td>
+      <td>${r.created_at ?? ''}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+document.getElementById('mainForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+
+  const payload = {
+    name: document.getElementById('name').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    amount: document.getElementById('amount').value,
+    status: document.getElementById('status').value
+  };
+
+  const msg = document.getElementById('msg');
+  msg.textContent = 'Enviando...';
+
+  try{
+    const res = await fetch('/api/records', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const out = await res.json().catch(()=> ({}));
+    if(!res.ok) throw new Error(out.error || 'Erro no POST');
+    msg.textContent = `OK (order_id=${out.order_id})`;
+    e.target.reset();
+    await fetchRows();
+  }catch(err){
+    msg.textContent = 'Falhou: ' + err.message;
+  }
+});
+
+// Botão "Consultar" chama o GET
+document.getElementById('btnConsultar').addEventListener('click', async ()=>{
+  const msg = document.getElementById('msg');
+  msg.textContent = 'Consultando...';
+  try{
+    await fetchRows();
+    msg.textContent = 'Consulta atualizada.';
+  }catch(err){
+    msg.textContent = 'Falhou: ' + err.message;
+  }
+});
+
+// Carrega tabela ao abrir a página
+fetchRows().catch(err => {
+  document.getElementById('msg').textContent = 'Falhou na carga inicial: ' + err.message;
+});
+</script>
+</body>
+</html>
