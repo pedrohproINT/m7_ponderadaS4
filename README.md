@@ -1,5 +1,8 @@
 # Simple One-Page App (EC2 + RDS MySQL)
 
+## Link do vídeo
+https://drive.google.com/file/d/1iqQYfKAJbT8VjUTFhGYpDqNLJJf4Ttt_/view?usp=drive_link
+
 ## Arquitetura
 - **Frontend + Backend**: uma única aplicação Flask servida em um **EC2 Amazon Linux** (público) por meio do `flask run` (ou Gunicorn/Nginx em produção).
 - **Banco de dados**: **RDS MySQL** (privado, sem acesso público) na mesma VPC do EC2.
